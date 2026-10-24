@@ -22,7 +22,7 @@ function tx(store, mode, fn) {
   return db().then(d => new Promise((res, rej) => {
     const t = d.transaction(store, mode), s = t.objectStore(store); let out;
     const r = fn(s); if (r) r.onsuccess = () => { out = r.result; };
-    t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    t.oncomplete = () => res(out); t.onerror = () => rej(t.error || new Error('storage write failed')); t.onabort = () => rej(t.error || new Error('storage write failed'));
   }));
 }
 const idb = {
@@ -243,6 +243,9 @@ async function storageInfo() {
   let used = 0, quota = 0, persisted = false;
   try { const e = await navigator.storage.estimate(); used = e.usage || 0; quota = e.quota || 0; } catch (e) {}
   try { persisted = await navigator.storage.persisted(); } catch (e) {}
+  const mine = (S.feed ? S.feed.posts.filter(p => S.have.has(p.id)).reduce((a, p) => a + (p.size || 0) + (p.psize || 0), 0) : 0)
+    + [...S.saved.values()].reduce((a, v) => a + (v.blob ? v.blob.size : 0), 0);
+  if (!used || used < mine) used = mine;
   return { used, quota, persisted };
 }
 async function openSheet() {
@@ -290,7 +293,7 @@ async function download() {
     S.feed = feed; await idb.put('kv', 'feed', feed);
     const todo = feed.posts.filter(p => !S.have.has(p.id));
     const totalB = todo.reduce((a, p) => a + (p.size || 0) + (p.psize || 0), 0);
-    let done = 0, doneB = 0, fail = 0, idx = 0, stored = feed.posts.filter(p => S.have.has(p.id)).reduce((a, p) => a + (p.size || 0), 0);
+    let done = 0, doneB = 0, fail = 0, idx = 0, firstErr = '', stored = feed.posts.filter(p => S.have.has(p.id)).reduce((a, p) => a + (p.size || 0), 0);
     let wakeLock = null; try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
     const worker = async () => {
       while (idx < todo.length) {
@@ -300,7 +303,7 @@ async function download() {
           const blob = await fetchBlob(p.url);
           let poster = null; if (p.poster) { try { poster = await fetchBlob(p.poster, 2); } catch (e) {} }
           await idb.put('media', p.id, { blob, poster }); S.have.add(p.id); stored += blob.size; doneB += blob.size + (poster ? poster.size : 0);
-        } catch (e) { fail++; if (e && e.name === 'QuotaExceededError') { idx = todo.length; toast('Phone storage limit reached — stopping', 5000); } }
+        } catch (e) { fail++; if (!firstErr) firstErr = (e && (e.message || e.name)) || 'storage error'; if (e && e.name === 'QuotaExceededError') { idx = todo.length; toast('Phone storage limit reached — stopping', 5000); } }
         done++;
         status(`Downloading ${done} / ${todo.length} · ${fmtMB(doneB)} of ~${fmtMB(totalB)}${fail ? ' · ' + fail + ' skipped' : ''}`, totalB ? doneB / totalB : done / todo.length);
       }
@@ -309,6 +312,7 @@ async function download() {
     if (wakeLock) try { wakeLock.release(); } catch (e) {}
     buildChips();
     const si = await storageInfo();
+    if (todo.length && fail === todo.length) throw new Error((firstErr === 'null' || !firstErr ? 'could not store files (Private Browsing is not supported)' : firstErr));
     status(`✅ Ready offline: ${S.have.size} posts on this phone · ${fmtMB(si.used)} used${fail ? ' · ' + fail + ' skipped' : ''}`, 1);
     setTimeout(() => $('#status').classList.remove('show'), 8000);
     if (S.tab === 'feed') rebuild();
