@@ -6,12 +6,12 @@ from xml.etree import ElementTree as ET
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'site'
 MEDIA = os.path.join(OUT, 'media'); os.makedirs(MEDIA, exist_ok=True)
 UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
-NINE_TYPES = [('hot', 22), ('trending', 16), ('fresh', 10)]   # pages of 10
+NINE_TYPES = [('hot', 35), ('trending', 28), ('fresh', 18)]   # pages of 10
 SUBS = ['memes', 'funny', 'me_irl', 'wholesomememes', 'AnimalsBeingDerps', 'BeAmazed',
         'interestingasfuck', 'mildlyinteresting', 'Unexpected', 'MadeMeSmile', 'technicallythetruth']
-PER_SUB = 70
+PER_SUB = 100
 VID_MAX = 5_500_000          # per video bytes
-VID_BUDGET = 600_000_000     # all rehosted videos
+VID_BUDGET = 750_000_000     # all rehosted videos
 GIF_MAX = 8_000_000
 log = lambda *a: print(*a, flush=True)
 report = {}

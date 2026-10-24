@@ -253,7 +253,7 @@ async function openSheet() {
   const onDev = f ? f.posts.filter(p => S.have.has(p.id)).length : 0;
   const unseen = f ? f.posts.filter(p => S.have.has(p.id) && !S.seen.has(p.id)).length : 0;
   $('#pan').innerHTML = `<h2>✈️ Offline download</h2>
-   <p>${f ? `Feed from <b>${new Date(f.generated * 1000).toLocaleString()}</b> · <b>${onDev}</b> / ${f.posts.length} posts on this phone · ${unseen} unseen (~${Math.round(unseen * 9 / 60 * 10) / 10} h of scrolling)` : 'Nothing downloaded yet.'}</p>
+   <p>${f ? `Feed from <b>${new Date(f.generated * 1000).toLocaleString()}</b> · <b>${onDev}</b> / ${f.posts.length} posts on this phone · ${unseen} unseen (about ${Math.max(0.1, Math.round(unseen * 8 / 360) / 10)} h of scrolling)` : 'Nothing downloaded yet.'}</p>
    <p>Storage used by this app: <b>${fmtMB(si.used)}</b>${si.quota ? ' of ' + fmtMB(si.quota) + ' allowed' : ''}${si.persisted ? ' · 🔒 protected' : ''}</p>
    <p>Saved ♥: ${S.saved.size} posts (kept even when the feed is refreshed).</p>
    ${standalone() ? '' : '<p style="color:#ffb86b">You are in Safari. Add to Home Screen first (Share ⬆ → Add to Home Screen) and download inside that app — Safari and the Home Screen app keep separate storage.</p>'}
